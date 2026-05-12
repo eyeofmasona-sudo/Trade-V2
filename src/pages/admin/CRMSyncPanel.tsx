@@ -2,27 +2,14 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { RefreshCw, Webhook, Activity, History, Server, Search, CheckCircle2, AlertCircle, Play, Database, FileText, Settings, Key, Pause, RefreshCcw } from 'lucide-react';
 
-const webhooks = [
-  { id: 'wh_user', name: 'User Creation Sync', endpoint: 'https://crm.example.com/api/v1/users', status: 'active', events: ['user.created'] },
-  { id: 'wh_kyc', name: 'KYC Status Updates', endpoint: 'https://crm.example.com/api/v1/kyc', status: 'active', events: ['kyc.updated', 'kyc.rejected'] },
-  { id: 'wh_balance', name: 'Virtual Balance Changes', endpoint: 'https://crm.example.com/api/v1/wallets', status: 'paused', events: ['balance.added', 'balance.deducted'] },
-  { id: 'wh_tx', name: 'Simulated Trades', endpoint: 'https://data.example.com/ingress/trades', status: 'active', events: ['trade.opened', 'trade.closed'] },
-  { id: 'wh_gamification', name: 'XP & Level Sync', endpoint: 'https://crm.example.com/api/v1/gamification', status: 'active', events: ['level.up', 'xp.awarded'] }
-];
+const webhooks: any[] = [];
 
-const syncEvents = [
-  { id: 'evt_991', type: 'user.created', user: 'usr_882', status: 'success', time: 'Just now', retries: 0 },
-  { id: 'evt_990', type: 'balance.added', user: 'usr_145', status: 'failed', time: '5m ago', retries: 3, error: 'Connection timeout' },
-  { id: 'evt_989', type: 'level.up', user: 'usr_004', status: 'success', time: '12m ago', retries: 0 },
-  { id: 'evt_988', type: 'kyc.updated', user: 'usr_812', status: 'success', time: '1h ago', retries: 1 },
-  { id: 'evt_987', type: 'trade.closed', user: 'usr_001', status: 'success', time: '1h ago', retries: 0 },
-  { id: 'evt_986', type: 'security.alert', user: 'usr_003', status: 'success', time: '2h ago', retries: 0 },
-];
+const syncEvents: any[] = [];
 
 export const CRMSyncPanel: React.FC = () => {
   const [showSecretConfig, setShowSecretConfig] = useState(false);
-  const [webhookSecret, setWebhookSecret] = useState('bh_sk_live_9a2f8d1e0c3b4a5d');
-  const [isSecretEnabled, setIsSecretEnabled] = useState(true);
+  const [webhookSecret, setWebhookSecret] = useState('');
+  const [isSecretEnabled, setIsSecretEnabled] = useState(false);
   const [isSecretVisible, setIsSecretVisible] = useState(false);
 
   return (
@@ -33,13 +20,13 @@ export const CRMSyncPanel: React.FC = () => {
         <div className="glass-card p-6 border-white/5 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-24 h-24 bg-accent-secondary/5 rounded-full blur-2xl pointer-events-none" />
           <div className="flex justify-between items-start mb-4">
-            <div className="p-2 rounded-xl bg-accent-secondary/10 text-accent-secondary">
+            <div className="p-2 rounded-xl bg-slate-500/10 text-slate-500">
               <Activity size={20} />
             </div>
-            <span className="text-[10px] uppercase font-bold tracking-widest text-accent-secondary bg-accent-secondary/10 px-2 py-0.5 rounded">Operational</span>
+            <span className="text-[10px] uppercase font-bold tracking-widest text-slate-500 bg-slate-500/10 px-2 py-0.5 rounded">Not Configured</span>
           </div>
           <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">CRM Connection</h4>
-          <p className="text-2xl font-bold font-mono text-white mb-2">99.98%</p>
+          <p className="text-2xl font-bold font-mono text-white mb-2">N/A</p>
           <p className="text-[10px] font-bold text-slate-400">Uptime (30d)</p>
         </div>
 
@@ -50,8 +37,8 @@ export const CRMSyncPanel: React.FC = () => {
             </div>
           </div>
           <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Events Synced (24h)</h4>
-          <p className="text-2xl font-bold font-mono text-white mb-2">12,450</p>
-          <p className="text-[10px] font-bold text-accent-primary">+14% vs yesterday</p>
+          <p className="text-2xl font-bold font-mono text-white mb-2">0</p>
+          <p className="text-[10px] font-bold text-accent-primary">0% vs yesterday</p>
         </div>
 
         <div className="glass-card p-6 border-white/5 relative overflow-hidden">
@@ -59,11 +46,10 @@ export const CRMSyncPanel: React.FC = () => {
             <div className="p-2 rounded-xl bg-orange-500/10 text-orange-500">
               <History size={20} />
             </div>
-            <span className="text-[10px] uppercase font-bold tracking-widest text-orange-500 bg-orange-500/10 px-2 py-0.5 rounded">2 Active</span>
+            <span className="text-[10px] uppercase font-bold tracking-widest text-orange-500 bg-orange-500/10 px-2 py-0.5 rounded">0 Active</span>
           </div>
           <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Pending Retries</h4>
-          <p className="text-2xl font-bold font-mono text-white mb-2">14</p>
-          <p className="text-[10px] font-bold text-slate-400">Auto-retry in progress</p>
+          <p className="text-2xl font-bold font-mono text-white mb-2">0</p>
         </div>
 
         <div className="glass-card p-6 border-white/5 relative overflow-hidden">
@@ -73,8 +59,7 @@ export const CRMSyncPanel: React.FC = () => {
             </div>
           </div>
           <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Dead Letter Queue</h4>
-          <p className="text-2xl font-bold font-mono text-white mb-2">3</p>
-          <p className="text-[10px] font-bold text-rose-500">Requires manual review</p>
+          <p className="text-2xl font-bold font-mono text-white mb-2">0</p>
         </div>
       </div>
 
@@ -185,7 +170,9 @@ export const CRMSyncPanel: React.FC = () => {
           </div>
 
           <div className="space-y-4">
-            {webhooks.map((wh) => (
+            {webhooks.length === 0 ? (
+               <div className="text-center py-8 text-slate-500 text-sm">No webhook endpoints configured</div>
+            ) : webhooks.map((wh) => (
               <div key={wh.id} className="p-4 border border-white/5 rounded-xl bg-[#111] flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
@@ -257,7 +244,9 @@ export const CRMSyncPanel: React.FC = () => {
           </div>
 
           <div className="space-y-4 flex-1">
-            {syncEvents.map((evt) => (
+            {syncEvents.length === 0 ? (
+               <div className="text-center py-8 text-slate-500 text-sm">No recent sync events</div>
+            ) : syncEvents.map((evt) => (
               <div key={evt.id} className="p-3 border border-white/5 rounded-xl bg-[#111] hover:bg-white/5 transition-colors group">
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex items-center gap-2">
