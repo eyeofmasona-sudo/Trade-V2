@@ -1,0 +1,186 @@
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { X, ShieldCheck, Download, Upload, ArrowRight, Bitcoin, CheckCircle2 } from 'lucide-react';
+import { crmService } from '../../services/crmService';
+import { supabase } from '../../lib/supabase';
+import { useTradingStore } from '../../stores/tradingStore';
+import { useTransactionStore } from '../../stores/transactionStore';
+import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+
+export const TransferModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  type: 'deposit' | 'withdraw';
+}> = ({ isOpen, onClose, type }) => {
+  const { t } = useTranslation('common');
+  const [step, setStep] = useState(1);
+  const [amount, setAmount] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { wallet } = useTradingStore();
+  const { addRequest } = useTransactionStore();
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+  }, []);
+  
+  const isDeposit = type === 'deposit';
+
+  const handleAction = async () => {
+    const numAmount = Number(amount);
+    if (!numAmount || numAmount <= 0) {
+      toast.error('Invalid amount');
+      return;
+    }
+    if (!isDeposit && numAmount > wallet.balance) {
+      toast.error('Insufficient balance');
+      return;
+    }
+
+    setLoading(true);
+    
+    // Create local request
+    addRequest({
+      userId: user?.id || 'unknown',
+      userEmail: user?.email || 'unknown',
+      userName: user?.user_metadata?.name || 'User',
+      type: isDeposit ? 'Deposit' : 'Withdrawal',
+      amount: numAmount,
+      currency: 'USDT',
+    });
+
+    if (user) {
+      try {
+        await crmService.transaction({
+          external_trader_id: user.id,
+          external_tx_id: crypto.randomUUID(),
+          type: isDeposit ? 'deposit' : 'withdrawal',
+          amount: numAmount,
+          currency: 'USD',
+          status: 'pending',
+          processed_at: new Date().toISOString()
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    setLoading(false);
+    setStep(2);
+    toast.success(t('requestProcessing', { defaultValue: 'Your request is being processed.' }));
+
+    setTimeout(() => {
+      setStep(1);
+      setAmount('');
+      onClose();
+    }, 2000);
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <React.Fragment>
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+            onClick={onClose}
+          />
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-surface-bg border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden"
+          >
+            <div className={`absolute top-0 left-0 right-0 h-1 ${isDeposit ? 'bg-accent-secondary shadow-neon-emerald' : 'bg-orange-500 shadow-neon-rose'}`} />
+            
+            {step === 1 ? (
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-xl ${isDeposit ? 'bg-accent-secondary/10 text-accent-secondary' : 'bg-orange-500/10 text-orange-500'}`}>
+                      {isDeposit ? <Download size={20} /> : <Upload size={20} />}
+                    </div>
+                    <h3 className="text-lg font-bold text-white tracking-wide">
+                      {isDeposit ? 'Deposit' : 'Withdrawal'}
+                    </h3>
+                  </div>
+                  <button onClick={onClose} className="p-2 text-slate-500 hover:text-white transition-colors rounded-lg hover:bg-white/5">
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <div className="space-y-6">
+                  <div>
+                    <label className="text-[10px] uppercase tracking-widest text-slate-400 font-bold block mb-2">Select Currency</label>
+                    <div className="p-3 bg-[#111] border border-white/10 rounded-xl flex items-center justify-between cursor-pointer hover:border-white/20 transition-all">
+                      <div className="flex items-center gap-3">
+                        <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-500 flex items-center justify-center font-bold text-xs">$</div>
+                        <div>
+                          <p className="text-sm font-bold text-white">USD</p>
+                          <p className="text-[10px] text-slate-500">US Dollar</p>
+                        </div>
+                      </div>
+                      <ArrowRight size={16} className="text-slate-500" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between items-end mb-2">
+                       <label className="text-[10px] uppercase tracking-widest text-slate-400 font-bold block">Amount</label>
+                       {isDeposit ? (
+                         <span className="text-[10px] font-bold text-slate-500">Add funds</span>
+                       ) : (
+                         <span className="text-[10px] font-bold text-slate-500">Available: <span className="text-white">{wallet.balance.toFixed(2)} USD</span></span>
+                       )}
+                    </div>
+                    <div className="relative group">
+                       <input 
+                         type="number"
+                         placeholder="0.00"
+                         value={amount}
+                         onChange={(e) => setAmount(e.target.value)}
+                         className="w-full p-4 bg-[#111] border border-white/10 rounded-xl text-lg font-mono font-bold text-white focus:outline-none focus:border-accent-primary/50 transition-all pl-12"
+                       />
+                       <span className="absolute left-4 top-1/2 -translate-y-1/2 font-mono text-slate-500 font-bold">$</span>
+                       <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500 group-focus-within:text-accent-primary transition-colors">USD</span>
+                    </div>
+                  </div>
+
+                  <button 
+                    onClick={handleAction}
+                    disabled={!amount || Number(amount) <= 0 || loading}
+                    className={`w-full py-4 rounded-xl text-sm font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2 ${
+                      isDeposit 
+                      ? 'bg-accent-secondary text-black shadow-neon-emerald hover:brightness-110' 
+                      : 'bg-white text-black shadow-[0_0_15px_rgba(255,255,255,0.3)] hover:brightness-110'
+                    }`}
+                  >
+                    {loading ? 'Processing...' : (isDeposit ? 'Submit Deposit' : 'Submit Withdrawal')}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="p-8 flex flex-col items-center justify-center text-center space-y-4">
+                <motion.div 
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", stiffness: 200, damping: 20 }}
+                  className={`w-20 h-20 rounded-full flex items-center justify-center ${isDeposit ? 'bg-accent-secondary/20 text-accent-secondary' : 'bg-orange-500/20 text-orange-500'}`}
+                >
+                  <CheckCircle2 size={40} />
+                </motion.div>
+                <div>
+                   <h3 className="text-xl font-bold text-white mb-2">Transaction Processing</h3>
+                   <p className="text-sm text-slate-400">{isDeposit ? 'Deposit request submitted and is pending approval.' : 'Withdrawal request submitted and is pending approval.'}</p>
+                </div>
+              </div>
+            )}
+          </motion.div>
+        </React.Fragment>
+      )}
+    </AnimatePresence>
+  );
+};
