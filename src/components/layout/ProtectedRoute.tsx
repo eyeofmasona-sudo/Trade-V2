@@ -1,7 +1,14 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { MainLayout } from './MainLayout';
+import { Loader2 } from 'lucide-react';
+
+const Fallback = () => (
+  <div className="flex h-full w-full items-center justify-center min-h-[400px]">
+    <Loader2 className="w-8 h-8 text-accent-primary animate-spin" />
+  </div>
+);
 
 export const ProtectedRoute: React.FC = () => {
   const { session, loading } = useAuth();
@@ -20,10 +27,13 @@ export const ProtectedRoute: React.FC = () => {
 
   return (
     <MainLayout>
-      <Outlet />
+      <Suspense fallback={<Fallback />}>
+        <Outlet />
+      </Suspense>
     </MainLayout>
   );
 };
+
 
 export const AdminProtectedRoute: React.FC = () => {
   const { session, loading, role } = useAuth();

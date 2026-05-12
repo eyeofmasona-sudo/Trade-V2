@@ -133,7 +133,9 @@ export const AdminLayout = () => {
           </header>
 
           <div className="flex-1 overflow-y-auto custom-scrollbar bg-[radial-gradient(circle_at_top_right,rgba(244,63,94,0.03),transparent)]">
-            <Outlet />
+            <React.Suspense fallback={<div className="flex h-full w-full items-center justify-center min-h-[400px]"><div className="w-8 h-8 rounded-full border-2 border-rose-500 border-t-transparent animate-spin" /></div>}>
+              <Outlet />
+            </React.Suspense>
           </div>
         </main>
       </div>

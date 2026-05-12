@@ -12,7 +12,7 @@ export const AdminOverview = () => {
   const pendingWithdrawals = requests.filter(r => r.type === 'Withdrawal' && r.status === 'Pending').length;
 
   return (
-    <div className="p-8 space-y-8 max-w-[1600px] mx-auto animate-in fade-in duration-500">
+    <div className="p-8 space-y-8 max-w-[1600px] mx-auto animate-in fade-in duration-200">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-white uppercase tracking-wider">System Overview</h2>

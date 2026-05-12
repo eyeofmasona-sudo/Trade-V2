@@ -20,31 +20,30 @@ export const useMarketEngine = () => {
     let ws: WebSocket | null = null;
     
     const connectWS = () => {
-      // Connect to combined stream for all tickers
-      // Using !ticker@arr to get all 24hr ticker stats without passing a huge URL
-      ws = new WebSocket(`wss://stream.binance.com:9443/ws/!ticker@arr`);
+      // Connect to combined stream for specific pairs to avoid huge payloads
+      const streamUrl = CRYPTO_PAIRS.map(p => `${p}@ticker`).join('/');
+      ws = new WebSocket(`wss://stream.binance.com:9443/stream?streams=${streamUrl}`);
       
       ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        if (Array.isArray(data)) {
-          data.forEach((item: any) => {
-            const lowerSymbol = item.s.toLowerCase();
-            // Only process if it's in our list to save CPU
-            if (CRYPTO_PAIRS.includes(lowerSymbol)) {
-              const currentPrice = parseFloat(item.c);
-              const priceChangePercent24h = parseFloat(item.P);
-              updatePrice(item.s.toUpperCase(), currentPrice, priceChangePercent24h);
-            }
-          });
+        try {
+          const payload = JSON.parse(event.data);
+          if (payload.data) {
+            const item = payload.data;
+            const currentPrice = parseFloat(item.c);
+            const priceChangePercent24h = parseFloat(item.P);
+            updatePrice(item.s.toUpperCase(), currentPrice, priceChangePercent24h);
+          }
+        } catch (err) {
+          // Ignore parsing errors
         }
       };
 
       ws.onerror = (e) => {
-        console.error("Binance WS Global Error", e);
+        console.warn("Binance WS Connection Error - Retrying soon...");
       };
       
       ws.onclose = () => {
-         setTimeout(connectWS, 5000); // Reconnect
+         setTimeout(connectWS, 3000); // Reconnect
       }
     };
 
