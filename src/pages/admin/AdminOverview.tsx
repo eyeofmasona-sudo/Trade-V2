@@ -1,22 +1,15 @@
 import React from 'react';
-import { Users, Activity, ShieldAlert, Server, Globe2, AlertTriangle, Database, Zap, Bell } from 'lucide-react';
+import { Users, Activity, ShieldAlert, Server, Globe2, AlertTriangle, Database, Zap, Bell, CheckCircle2 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useTransactionStore } from '../../stores/transactionStore';
-
-const sysData = [
-  { time: '00:00', load: 45, volume: 1.2 },
-  { time: '04:00', load: 55, volume: 1.8 },
-  { time: '08:00', load: 85, volume: 4.5 },
-  { time: '12:00', load: 65, volume: 3.2 },
-  { time: '16:00', load: 90, volume: 5.1 },
-  { time: '20:00', load: 75, volume: 2.8 },
-  { time: '24:00', load: 60, volume: 2.1 },
-];
 
 const crmLogs: any[] = [];
 
 export const AdminOverview = () => {
-  const { notifications, markNotificationRead } = useTransactionStore();
+  const { notifications, markNotificationRead, requests } = useTransactionStore();
+  
+  const pendingDeposits = requests.filter(r => r.type === 'Deposit' && r.status === 'Pending').length;
+  const pendingWithdrawals = requests.filter(r => r.type === 'Withdrawal' && r.status === 'Pending').length;
 
   return (
     <div className="p-8 space-y-8 max-w-[1600px] mx-auto animate-in fade-in duration-500">
@@ -32,12 +25,12 @@ export const AdminOverview = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {[
-          { label: 'Active Sessions', value: '14,245', change: '+12%', icon: Users, color: 'text-blue-400' },
-          { label: 'Sim Volume (24h)', value: '$45.2M', change: '+5.4%', icon: Activity, color: 'text-accent-primary' },
-          { label: 'Pending KYC', value: '342', change: 'Action Required', icon: ShieldAlert, color: 'text-rose-400' },
-          { label: 'Server Load', value: '65%', change: 'Nominal', icon: Server, color: 'text-amber-500' }
+          { label: 'Active Sessions', value: '1', change: 'Current user', icon: Users, color: 'text-blue-400' },
+          { label: 'Pending Deposits', value: pendingDeposits.toString(), change: 'Action Required', icon: Activity, color: 'text-accent-primary' },
+          { label: 'Pending Withdrawals', value: pendingWithdrawals.toString(), change: 'Action Required', icon: ShieldAlert, color: 'text-orange-500' },
+          { label: 'Server Load', value: 'Normal', change: 'Nominal', icon: Server, color: 'text-emerald-500' }
         ].map((metric, i) => (
-          <div key={i} className="glass-card p-6 border-white/5 group hover:border-rose-500/20 transition-all">
+          <div key={i} className="glass-card p-6 border-white/5 group hover:border-white/10 transition-all">
             <div className="flex justify-between items-start mb-4">
               <div className={`p-2 rounded-xl bg-white/5 ${metric.color}`}>
                 <metric.icon size={20} />
@@ -52,27 +45,10 @@ export const AdminOverview = () => {
 
       <div className="grid grid-cols-12 gap-6">
         <div className="col-span-12 xl:col-span-8 space-y-6">
-          <div className="glass-card p-6">
-             <h3 className="text-sm font-bold text-white uppercase tracking-widest mb-6 flex items-center gap-2">
-                <Activity size={18} className="text-rose-500" /> Infrastructure Load (Real-time)
-             </h3>
-             <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={sysData}>
-                    <defs>
-                      <linearGradient id="colorLoad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#f43f5e" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                    <XAxis dataKey="time" stroke="#475569" fontSize={10} axisLine={false} tickLine={false} />
-                    <YAxis stroke="#475569" fontSize={10} axisLine={false} tickLine={false} />
-                    <Tooltip contentStyle={{ backgroundColor: '#000', border: '1px solid #1e293b' }} />
-                    <Area type="monotone" dataKey="load" stroke="#f43f5e" fillOpacity={1} fill="url(#colorLoad)" />
-                  </AreaChart>
-                </ResponsiveContainer>
-             </div>
+          <div className="glass-card p-6 min-h-[300px] flex flex-col justify-center items-center text-center">
+             <CheckCircle2 size={48} className="text-emerald-500/20 mb-4" />
+             <h3 className="text-sm font-bold text-white uppercase tracking-widest mb-2">Systems Nominal</h3>
+             <p className="text-[10px] text-slate-400">All infrastructure systems operating within normal parameters.</p>
           </div>
 
           <div className="glass-card p-6 min-h-[300px] relative overflow-hidden flex flex-col justify-center items-center">

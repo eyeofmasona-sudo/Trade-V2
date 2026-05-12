@@ -29,7 +29,7 @@ export interface AdminNotification {
 interface TransactionState {
   requests: TxRequest[];
   notifications: AdminNotification[];
-  addRequest: (req: Omit<TxRequest, 'id' | 'date' | 'status'>) => void;
+  addRequest: (req: Omit<TxRequest, 'id' | 'date' | 'status'>) => string;
   updateRequestStatus: (id: string, status: TxStatus) => void;
   updateRequestInstructions: (id: string, instructions: string) => void;
   addNotification: (message: string) => void;
@@ -39,27 +39,31 @@ interface TransactionState {
 export const useTransactionStore = create<TransactionState>((set) => ({
   requests: [],
   notifications: [],
-  addRequest: (reqData) => set((state) => {
-    const newReq: TxRequest = {
-      ...reqData,
-      id: crypto.randomUUID(),
-      date: new Date().toISOString(),
-      status: 'Pending',
-    };
-    
-    const notifMsg = `New ${newReq.type.toLowerCase()} request from ${newReq.userName} — ${newReq.amount} ${newReq.currency}`;
-    const newNotif: AdminNotification = {
-      id: crypto.randomUUID(),
-      message: notifMsg,
-      date: new Date().toISOString(),
-      read: false,
-    };
+  addRequest: (reqData) => {
+    const id = crypto.randomUUID();
+    set((state) => {
+      const newReq: TxRequest = {
+        ...reqData,
+        id,
+        date: new Date().toISOString(),
+        status: 'Pending',
+      };
+      
+      const notifMsg = `New ${newReq.type.toLowerCase()} request from ${newReq.userName} — ${newReq.amount} ${newReq.currency}`;
+      const newNotif: AdminNotification = {
+        id: crypto.randomUUID(),
+        message: notifMsg,
+        date: new Date().toISOString(),
+        read: false,
+      };
 
-    return { 
-      requests: [newReq, ...state.requests],
-      notifications: [newNotif, ...state.notifications]
-    };
-  }),
+      return { 
+        requests: [newReq, ...state.requests],
+        notifications: [newNotif, ...state.notifications]
+      };
+    });
+    return id;
+  },
   updateRequestStatus: (id, status) => set((state) => {
     const newReqs = state.requests.map(r => r.id === id ? { ...r, status } : r);
     return { requests: newReqs };

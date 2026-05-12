@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, ShieldCheck, Download, Upload, ArrowRight, Bitcoin, CheckCircle2, Lock } from 'lucide-react';
+import { X, ShieldCheck, Download, Upload, ArrowRight, Bitcoin, CheckCircle2, Lock, Loader2 } from 'lucide-react';
 import { crmService } from '../../services/crmService';
 import { supabase } from '../../lib/supabase';
 import { useTradingStore } from '../../stores/tradingStore';
@@ -20,8 +20,9 @@ export const TransferModal: React.FC<{
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState<TxMethod>('Credit Card');
   const [loading, setLoading] = useState(false);
+  const [requestId, setRequestId] = useState<string | null>(null);
   const { wallet } = useTradingStore();
-  const { addRequest } = useTransactionStore();
+  const { addRequest, requests } = useTransactionStore();
   const [user, setUser] = useState<any>(null);
   const { kycStatus } = useAuth();
 
@@ -30,6 +31,8 @@ export const TransferModal: React.FC<{
   }, []);
   
   const isDeposit = type === 'deposit';
+  
+  const activeRequest = requestId ? requests.find(r => r.id === requestId) : null;
 
   const handleAction = async () => {
     if (kycStatus !== 'VERIFIED') {
@@ -49,7 +52,7 @@ export const TransferModal: React.FC<{
     setLoading(true);
     
     // Create local request
-    addRequest({
+    const reqId = addRequest({
       userId: user?.id || 'unknown',
       userEmail: user?.email || 'unknown',
       userName: user?.user_metadata?.name || 'User',
@@ -58,6 +61,7 @@ export const TransferModal: React.FC<{
       currency: 'USDT',
       method: method,
     });
+    setRequestId(reqId);
 
     if (user) {
       try {
@@ -78,12 +82,17 @@ export const TransferModal: React.FC<{
     setLoading(false);
     setStep(2);
     toast.success(t('requestProcessing', { defaultValue: 'Your request is being processed.' }));
+  };
 
-    setTimeout(() => {
-      setStep(1);
-      setAmount('');
-      onClose();
-    }, 2000);
+  const handleClose = () => {
+    if (step === 2 && activeRequest && !activeRequest.instructions) {
+      toast.error('Please wait for instructions from the admin.');
+      return;
+    }
+    setStep(1);
+    setAmount('');
+    setRequestId(null);
+    onClose();
   };
 
   return (
@@ -95,7 +104,7 @@ export const TransferModal: React.FC<{
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
-            onClick={onClose}
+            onClick={handleClose}
           />
           <motion.div 
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -116,7 +125,7 @@ export const TransferModal: React.FC<{
                       {isDeposit ? 'Deposit' : 'Withdrawal'}
                     </h3>
                   </div>
-                  <button onClick={onClose} className="p-2 text-slate-500 hover:text-white transition-colors rounded-lg hover:bg-white/5">
+                  <button onClick={handleClose} className="p-2 text-slate-500 hover:text-white transition-colors rounded-lg hover:bg-white/5">
                     <X size={20} />
                   </button>
                 </div>
@@ -199,22 +208,48 @@ export const TransferModal: React.FC<{
                   </button>
                 </div>
               </div>
-            ) : (
+            ) : step === 2 && activeRequest ? (
               <div className="p-8 flex flex-col items-center justify-center text-center space-y-4">
-                <motion.div 
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: "spring", stiffness: 200, damping: 20 }}
-                  className={`w-20 h-20 rounded-full flex items-center justify-center ${isDeposit ? 'bg-accent-secondary/20 text-accent-secondary' : 'bg-orange-500/20 text-orange-500'}`}
-                >
-                  <CheckCircle2 size={40} />
-                </motion.div>
-                <div>
-                   <h3 className="text-xl font-bold text-white mb-2">Transaction Processing</h3>
-                   <p className="text-sm text-slate-400">{isDeposit ? 'Deposit request submitted and is pending approval.' : 'Withdrawal request submitted and is pending approval.'}</p>
-                </div>
+                {activeRequest.instructions ? (
+                  <>
+                    <motion.div 
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: "spring", stiffness: 200, damping: 20 }}
+                      className={`w-20 h-20 rounded-full flex items-center justify-center ${isDeposit ? 'bg-accent-secondary/20 text-accent-secondary' : 'bg-orange-500/20 text-orange-500'}`}
+                    >
+                      <CheckCircle2 size={40} />
+                    </motion.div>
+                    <div className="w-full">
+                       <h3 className="text-xl font-bold text-white mb-2">Instructions Received</h3>
+                       <p className="text-sm text-slate-400 mb-6">Please follow the instructions below to complete your transfer:</p>
+                       <div className="bg-white/5 border border-white/10 p-4 rounded-xl text-left select-all text-sm font-mono text-slate-200 break-words mb-6 max-h-[200px] overflow-y-auto">
+                         {activeRequest.instructions}
+                       </div>
+                       
+                       <button 
+                          onClick={handleClose}
+                          className={`w-full py-4 rounded-xl text-sm font-bold transition-all text-white ${
+                            isDeposit 
+                            ? 'bg-accent-secondary text-black shadow-neon-emerald hover:brightness-110' 
+                            : 'bg-orange-500 text-black shadow-neon-rose hover:brightness-110'
+                          }`}
+                        >
+                          Done
+                       </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <Loader2 size={40} className={`animate-spin ${isDeposit ? 'text-accent-secondary' : 'text-orange-500'}`} />
+                    <div>
+                       <h3 className="text-xl font-bold text-white mb-2">Waiting for Admin</h3>
+                       <p className="text-sm text-slate-400">Please keep this window open while our operator prepares your transfer instructions...</p>
+                    </div>
+                  </>
+                )}
               </div>
-            )}
+            ) : null}
           </motion.div>
         </React.Fragment>
       )}
