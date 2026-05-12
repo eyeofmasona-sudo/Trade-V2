@@ -18,7 +18,7 @@ export const Login: React.FC = () => {
     setLoading(true);
     setError(null);
     
-    if (email === 'BulAdm26352' && password === '50bul60edm') {
+    if (email === 'admin@elite.trading' && password === 'admin123') {
       signInMockAdmin();
       navigate('/admin');
       return;

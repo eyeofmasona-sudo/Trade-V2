@@ -30,7 +30,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   const signInMockAdmin = () => {
-    const mockUser = { id: 'admin-mock', email: 'BulAdm26352' } as User;
+    const mockUser = { id: 'admin-mock', email: 'admin@elite.trading' } as User;
     const mockSession = { user: mockUser, access_token: 'mock-token', refresh_token: 'mock', expires_in: 9999, token_type: 'bearer' } as Session;
     setSession(mockSession);
     setUser(mockUser);
