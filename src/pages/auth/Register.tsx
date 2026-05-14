@@ -4,6 +4,7 @@ import { Mail, Lock, UserPlus, AlertCircle, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { crmService } from '../../services/crmService';
+import { getAttribution } from '../../hooks/useAttribution';
 
 export const Register: React.FC = () => {
   const [name, setName] = useState('');
@@ -32,6 +33,7 @@ export const Register: React.FC = () => {
       if (error) throw error;
       
       try {
+        const attribution = getAttribution();
         await crmService.registerClient({
           external_trader_id: data.user?.id || crypto.randomUUID(),
           full_name: name,
@@ -44,7 +46,8 @@ export const Register: React.FC = () => {
             balance: 0,
             equity: 0,
             leverage: 100,
-          }
+          },
+          ...(attribution ? { attribution } : {}),
         });
       } catch (crmError) {
         console.error('Failed to register in CRM:', crmError);

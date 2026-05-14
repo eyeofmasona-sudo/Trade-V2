@@ -30,8 +30,25 @@ const proxyFetch = async (action: string, payload: any) => {
   }
 };
 
+export interface RegisterClientPayload {
+  external_trader_id: string;
+  full_name: string;
+  email: string;
+  phone?: string;
+  country?: string;
+  account?: Record<string, unknown>;
+  attribution?: {
+    ref?: string;
+    utm_source?: string;
+    utm_medium?: string;
+    utm_campaign?: string;
+    utm_content?: string;
+    utm_term?: string;
+  };
+}
+
 export const crmService = {
-  async registerClient(data: any) {
+  async registerClient(data: RegisterClientPayload) {
     return proxyFetch('registerClient', data);
   },
 
